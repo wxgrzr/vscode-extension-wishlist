@@ -3,9 +3,18 @@
   "tasks": [
     {
       "type": "npm",
+      "script": "install",
+      "label": "npm: install",
+      "presentation": {
+        "reveal": "silent"
+      }
+    },
+    {
+      "type": "npm",
       "script": "compile",
       "problemMatcher": "$esbuild",
       "label": "npm: compile",
+      "dependsOn": ["npm: install"],
       "presentation": {
         "reveal": "silent"
       }

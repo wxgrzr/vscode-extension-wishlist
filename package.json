@@ -168,8 +168,5 @@
     "@types/vscode": "^1.85.0",
     "esbuild": "^0.21.5",
     "typescript": "^5.4.5"
-  },
-  "dependencies": {
-    "vscode": "^1.1.37"
   }
 }
