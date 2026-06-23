@@ -14,7 +14,6 @@ const FLAGS =
   0x200; /* IncludeLatestVersionOnly */
 
 // Filter type constants for the gallery "criteria".
-const FILTER_SEARCH_TEXT = 10;
 const FILTER_EXTENSION_NAME = 7;
 const FILTER_TARGET = 8;
 const FILTER_EXCLUDE_FLAGS = 12;
@@ -120,18 +119,6 @@ async function query(criteria: Array<{ filterType: number; value: string }>, pag
   const data = (await res.json()) as GalleryResponse;
   const extensions = data.results?.[0]?.extensions ?? [];
   return extensions.map(normalize);
-}
-
-/** Full-text search of the VS Code Marketplace. */
-export async function searchMarketplace(
-  text: string,
-  pageSize = 25
-): Promise<MarketplaceExtension[]> {
-  const trimmed = text.trim();
-  if (!trimmed) {
-    return [];
-  }
-  return query([{ filterType: FILTER_SEARCH_TEXT, value: trimmed }], pageSize);
 }
 
 /** Look up a single extension by its canonical id (publisher.name). */
