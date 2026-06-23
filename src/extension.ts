@@ -1,7 +1,6 @@
 import * as vscode from "vscode";
 import { WishlistStore } from "./storage";
 import { WishlistTreeProvider, WishlistTreeItem } from "./wishlistTree";
-import { MarketplacePanel } from "./webview";
 import { getExtensionById } from "./marketplace";
 
 export function activate(context: vscode.ExtensionContext): void {
@@ -19,19 +18,20 @@ export function activate(context: vscode.ExtensionContext): void {
       vscode.commands.registerCommand(command, callback)
     );
 
-  // Open the marketplace search + wishlist webview.
-  register("extensionWishlist.search", () => {
-    MarketplacePanel.show(context, store);
-  });
-
   // Refresh the tree view.
   register("extensionWishlist.refresh", () => {
     treeProvider.refresh();
   });
 
-  // Open the webview focused on a specific wishlisted extension.
-  register("extensionWishlist.openDetails", (node?: WishlistTreeItem) => {
-    MarketplacePanel.show(context, store, node?.item.extensionId);
+  // Open the extension's page inside VS Code so the user can read details and
+  // install/uninstall using the native UI. Invoked both by clicking a row
+  // (passes the id string) and from the context menu (passes the tree node).
+  register("extensionWishlist.open", async (arg?: unknown) => {
+    const id = extractExtensionId(arg);
+    if (!id) {
+      return;
+    }
+    await vscode.commands.executeCommand("extension.open", id);
   });
 
   // Open the marketplace web page for an item (from the tree).
@@ -42,19 +42,20 @@ export function activate(context: vscode.ExtensionContext): void {
     vscode.env.openExternal(vscode.Uri.parse(node.item.marketplaceUrl));
   });
 
-  // Trigger a real install from the wishlist when the user decides to try it.
-  register("extensionWishlist.install", async (node?: WishlistTreeItem) => {
+  // Uninstall an installed extension straight from the wishlist.
+  register("extensionWishlist.uninstall", async (node?: WishlistTreeItem) => {
     if (!node) {
       return;
     }
-    await vscode.commands.executeCommand(
-      "workbench.extensions.installExtension",
-      node.item.extensionId
-    );
     vscode.window.setStatusBarMessage(
-      `Installing ${node.item.displayName}...`,
+      `Uninstalling ${node.item.displayName}...`,
       3000
     );
+    await vscode.commands.executeCommand(
+      "workbench.extensions.uninstallExtension",
+      node.item.extensionId
+    );
+    treeProvider.refresh();
   });
 
   // Remove an item from the wishlist.
@@ -190,6 +191,7 @@ function extractExtensionId(arg: unknown): string | undefined {
   if (arg && typeof arg === "object") {
     const obj = arg as Record<string, any>;
     const candidate =
+      obj.item?.extensionId ??
       obj.extensionId ??
       obj.id ??
       obj.identifier?.id ??
