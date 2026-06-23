@@ -79,39 +79,22 @@ export function activate(context: vscode.ExtensionContext): void {
     if (!id) {
       return;
     }
-    const trimmed = id.trim();
-    if (store.has(trimmed)) {
-      vscode.window.showInformationMessage(
-        `${trimmed} is already on your wishlist.`
+    await addExtensionToWishlist(store, id);
+  });
+
+  // Add to wishlist from the built-in Extensions view right-click menu.
+  // VS Code passes the selected extension to commands contributed to
+  // `extension/context`; the shape can be a string id or an object, so
+  // we normalize it before looking the extension up.
+  register("extensionWishlist.addFromMarketplace", async (arg?: unknown) => {
+    const id = extractExtensionId(arg);
+    if (!id) {
+      vscode.window.showErrorMessage(
+        "Could not determine which extension to add to your wishlist."
       );
       return;
     }
-
-    await vscode.window.withProgress(
-      { location: vscode.ProgressLocation.Notification, title: `Looking up ${trimmed}...` },
-      async () => {
-        try {
-          const ext = await getExtensionById(trimmed);
-          if (!ext) {
-            vscode.window.showErrorMessage(
-              `Could not find "${trimmed}" on the Marketplace.`
-            );
-            return;
-          }
-          await store.add(ext);
-          vscode.window.setStatusBarMessage(
-            `Added ${ext.displayName} to your wishlist`,
-            3000
-          );
-        } catch (err) {
-          vscode.window.showErrorMessage(
-            `Failed to look up extension: ${
-              err instanceof Error ? err.message : String(err)
-            }`
-          );
-        }
-      }
-    );
+    await addExtensionToWishlist(store, id);
   });
 
   // Clear the whole wishlist with a confirmation.
@@ -144,4 +127,76 @@ export function activate(context: vscode.ExtensionContext): void {
 
 export function deactivate(): void {
   // Nothing to clean up; disposables are handled via context.subscriptions.
+}
+
+/**
+ * Looks an extension up on the Marketplace by id and adds it to the wishlist,
+ * showing progress and result feedback. No-op if it is already wishlisted.
+ */
+async function addExtensionToWishlist(
+  store: WishlistStore,
+  extensionId: string
+): Promise<void> {
+  const trimmed = extensionId.trim();
+  if (!trimmed) {
+    return;
+  }
+  if (store.has(trimmed)) {
+    vscode.window.showInformationMessage(
+      `${trimmed} is already on your wishlist.`
+    );
+    return;
+  }
+
+  await vscode.window.withProgress(
+    {
+      location: vscode.ProgressLocation.Notification,
+      title: `Looking up ${trimmed}...`,
+    },
+    async () => {
+      try {
+        const ext = await getExtensionById(trimmed);
+        if (!ext) {
+          vscode.window.showErrorMessage(
+            `Could not find "${trimmed}" on the Marketplace.`
+          );
+          return;
+        }
+        await store.add(ext);
+        vscode.window.setStatusBarMessage(
+          `Added ${ext.displayName} to your wishlist`,
+          3000
+        );
+      } catch (err) {
+        vscode.window.showErrorMessage(
+          `Failed to look up extension: ${
+            err instanceof Error ? err.message : String(err)
+          }`
+        );
+      }
+    }
+  );
+}
+
+/**
+ * Normalizes the argument VS Code passes to an `extension/context` command
+ * into a canonical extension id. Depending on the invocation, this can be a
+ * plain id string or an object carrying the identifier.
+ */
+function extractExtensionId(arg: unknown): string | undefined {
+  if (typeof arg === "string") {
+    return arg;
+  }
+  if (arg && typeof arg === "object") {
+    const obj = arg as Record<string, any>;
+    const candidate =
+      obj.extensionId ??
+      obj.id ??
+      obj.identifier?.id ??
+      obj.identifier?.value;
+    if (typeof candidate === "string") {
+      return candidate;
+    }
+  }
+  return undefined;
 }

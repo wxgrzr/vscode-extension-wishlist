@@ -89,6 +89,12 @@
         "icon": "$(add)"
       },
       {
+        "command": "extensionWishlist.addFromMarketplace",
+        "title": "Add to Wishlist",
+        "category": "Extension Wishlist",
+        "icon": "$(bookmark)"
+      },
+      {
         "command": "extensionWishlist.clearAll",
         "title": "Clear Wishlist",
         "category": "Extension Wishlist"
@@ -152,6 +158,18 @@
           "command": "extensionWishlist.remove",
           "when": "view == extensionWishlist.list && viewItem == wishlistItem",
           "group": "context@4"
+        }
+      ],
+      "extension/context": [
+        {
+          "command": "extensionWishlist.addFromMarketplace",
+          "group": "2_configure@1"
+        }
+      ],
+      "commandPalette": [
+        {
+          "command": "extensionWishlist.addFromMarketplace",
+          "when": "false"
         }
       ]
     }

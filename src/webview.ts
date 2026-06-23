@@ -8,7 +8,9 @@ type Inbound =
   | { type: "wishlistAdd"; extension: MarketplaceExtension }
   | { type: "wishlistRemove"; extensionId: string }
   | { type: "openMarketplace"; extensionId: string }
+  | { type: "openExtension"; extensionId: string }
   | { type: "install"; extensionId: string }
+  | { type: "uninstall"; extensionId: string }
   | { type: "ready" }
   | { type: "focusItem"; extensionId: string };
 
@@ -85,12 +87,20 @@ export class MarketplacePanel {
       null,
       this.disposables
     );
+
+    // Keep webview install state in sync as extensions are installed/removed.
+    vscode.extensions.onDidChange(
+      () => this.postInstalledIds(),
+      null,
+      this.disposables
+    );
   }
 
   private async handleMessage(msg: Inbound): Promise<void> {
     switch (msg.type) {
       case "ready": {
         this.postWishlistIds();
+        this.postInstalledIds();
         if (this.focusExtensionId) {
           this.post({ type: "focusItem", extensionId: this.focusExtensionId });
         }
@@ -130,18 +140,47 @@ export class MarketplacePanel {
         );
         break;
       }
-      case "install": {
-        vscode.commands.executeCommand(
-          "workbench.extensions.installExtension",
+      case "openExtension": {
+        // Open the extension's details page inside VS Code (works for
+        // gallery extensions that aren't installed yet).
+        await vscode.commands.executeCommand(
+          "extension.open",
           msg.extensionId
         );
+        break;
+      }
+      case "install": {
         vscode.window.setStatusBarMessage(
           `Installing ${msg.extensionId}...`,
           3000
         );
+        await vscode.commands.executeCommand(
+          "workbench.extensions.installExtension",
+          msg.extensionId
+        );
+        this.postInstalledIds();
+        break;
+      }
+      case "uninstall": {
+        vscode.window.setStatusBarMessage(
+          `Uninstalling ${msg.extensionId}...`,
+          3000
+        );
+        await vscode.commands.executeCommand(
+          "workbench.extensions.uninstallExtension",
+          msg.extensionId
+        );
+        this.postInstalledIds();
         break;
       }
     }
+  }
+
+  private postInstalledIds(): void {
+    this.post({
+      type: "installedIds",
+      ids: vscode.extensions.all.map((e) => e.id.toLowerCase()),
+    });
   }
 
   private postWishlistIds(): void {
@@ -273,7 +312,9 @@ function styles(): string {
     width: 42px; height: 42px; border-radius: 8px; flex: none;
     object-fit: contain; background: var(--vscode-editor-background);
   }
-  .card-title { font-weight: 600; line-height: 1.3; }
+  .card-title { font-weight: 600; line-height: 1.3; cursor: pointer; display: inline-block; }
+  .card-title:hover { color: var(--vscode-textLink-foreground); text-decoration: underline; }
+  .card-title:focus-visible { outline: 1px solid var(--vscode-focusBorder); outline-offset: 2px; }
   .card-pub { font-size: 12px; color: var(--vscode-descriptionForeground); }
   .card-desc {
     font-size: 13px; line-height: 1.5; color: var(--vscode-foreground);
@@ -301,6 +342,7 @@ function script(): string {
   const resultsEl = document.getElementById('results');
   const statusEl = document.getElementById('status');
   let wishlistIds = new Set();
+  let installedIds = new Set();
   let lastResults = [];
 
   function formatInstalls(n) {
@@ -322,13 +364,14 @@ function script(): string {
     }
     resultsEl.innerHTML = lastResults.map(function (e) {
       const saved = wishlistIds.has(e.extensionId);
+      const installed = installedIds.has(String(e.extensionId).toLowerCase());
       const icon = e.iconUrl
         ? '<img class="card-icon" src="' + esc(e.iconUrl) + '" alt="" />'
         : '<div class="card-icon"></div>';
       const rating = e.rating ? e.rating.toFixed(1) + '\u2605' : 'unrated';
       return '<article class="card ' + (saved ? 'saved' : '') + '" data-id="' + esc(e.extensionId) + '">' +
         '<div class="card-head">' + icon +
-          '<div><div class="card-title">' + esc(e.displayName) + '</div>' +
+          '<div><div class="card-title" data-act="open" role="link" tabindex="0" title="Open in VS Code">' + esc(e.displayName) + '</div>' +
           '<div class="card-pub">' + esc(e.publisherDisplayName) + '</div></div>' +
         '</div>' +
         '<div class="card-desc">' + esc(e.shortDescription) + '</div>' +
@@ -337,7 +380,9 @@ function script(): string {
         '<div class="actions">' +
           '<button class="wish-btn" data-act="wish">' + (saved ? 'Remove from Wishlist' : 'Add to Wishlist') + '</button>' +
           '<button class="secondary" data-act="market">Marketplace</button>' +
-          '<button class="secondary" data-act="install">Install</button>' +
+          (installed
+            ? '<button class="secondary" data-act="uninstall">Uninstall</button>'
+            : '<button class="secondary" data-act="install">Install</button>') +
         '</div>' +
       '</article>';
     }).join('');
@@ -354,14 +399,14 @@ function script(): string {
   searchBtn.addEventListener('click', doSearch);
   q.addEventListener('keydown', function (e) { if (e.key === 'Enter') doSearch(); });
 
-  resultsEl.addEventListener('click', function (e) {
-    const btn = e.target.closest('button');
-    if (!btn) return;
-    const card = e.target.closest('.card');
+  function handleAction(target) {
+    const actEl = target.closest('[data-act]');
+    if (!actEl) return;
+    const card = target.closest('.card');
     if (!card) return;
     const id = card.getAttribute('data-id');
     const ext = lastResults.find(function (x) { return x.extensionId === id; });
-    const act = btn.getAttribute('data-act');
+    const act = actEl.getAttribute('data-act');
     if (act === 'wish') {
       if (wishlistIds.has(id)) {
         vscode.postMessage({ type: 'wishlistRemove', extensionId: id });
@@ -372,7 +417,19 @@ function script(): string {
       vscode.postMessage({ type: 'openMarketplace', extensionId: id });
     } else if (act === 'install') {
       vscode.postMessage({ type: 'install', extensionId: id });
+    } else if (act === 'uninstall') {
+      vscode.postMessage({ type: 'uninstall', extensionId: id });
+    } else if (act === 'open') {
+      vscode.postMessage({ type: 'openExtension', extensionId: id });
     }
+  }
+
+  resultsEl.addEventListener('click', function (e) { handleAction(e.target); });
+  resultsEl.addEventListener('keydown', function (e) {
+    if (e.key !== 'Enter' && e.key !== ' ') return;
+    if (!e.target.closest('.card-title')) return;
+    e.preventDefault();
+    handleAction(e.target);
   });
 
   window.addEventListener('message', function (event) {
@@ -383,6 +440,9 @@ function script(): string {
       render();
     } else if (msg.type === 'wishlistIds') {
       wishlistIds = new Set(msg.ids);
+      render();
+    } else if (msg.type === 'installedIds') {
+      installedIds = new Set(msg.ids);
       render();
     } else if (msg.type === 'error') {
       statusEl.textContent = 'Error: ' + msg.message;
