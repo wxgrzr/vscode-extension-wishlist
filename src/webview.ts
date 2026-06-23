@@ -186,7 +186,7 @@ export class MarketplacePanel {
   private postWishlistIds(): void {
     this.post({
       type: "wishlistIds",
-      ids: this.store.getAll().map((i) => i.extensionId),
+      ids: this.store.getAll().map((i) => i.extensionId.toLowerCase()),
     });
   }
 
@@ -363,8 +363,9 @@ function script(): string {
       return;
     }
     resultsEl.innerHTML = lastResults.map(function (e) {
-      const saved = wishlistIds.has(e.extensionId);
-      const installed = installedIds.has(String(e.extensionId).toLowerCase());
+      const id = String(e.extensionId).toLowerCase();
+      const saved = wishlistIds.has(id);
+      const installed = installedIds.has(id);
       const icon = e.iconUrl
         ? '<img class="card-icon" src="' + esc(e.iconUrl) + '" alt="" />'
         : '<div class="card-icon"></div>';
@@ -405,10 +406,12 @@ function script(): string {
     const card = target.closest('.card');
     if (!card) return;
     const id = card.getAttribute('data-id');
-    const ext = lastResults.find(function (x) { return x.extensionId === id; });
+    const ext = lastResults.find(function (x) {
+      return String(x.extensionId).toLowerCase() === String(id).toLowerCase();
+    });
     const act = actEl.getAttribute('data-act');
     if (act === 'wish') {
-      if (wishlistIds.has(id)) {
+      if (wishlistIds.has(String(id).toLowerCase())) {
         vscode.postMessage({ type: 'wishlistRemove', extensionId: id });
       } else if (ext) {
         vscode.postMessage({ type: 'wishlistAdd', extension: ext });
@@ -439,7 +442,7 @@ function script(): string {
       statusEl.textContent = msg.results.length ? '' : 'No extensions found.';
       render();
     } else if (msg.type === 'wishlistIds') {
-      wishlistIds = new Set(msg.ids);
+      wishlistIds = new Set(msg.ids.map(function (id) { return String(id).toLowerCase(); }));
       render();
     } else if (msg.type === 'installedIds') {
       installedIds = new Set(msg.ids);
