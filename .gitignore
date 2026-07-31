@@ -19,3 +19,6 @@ dist/
 *.vsix
 
 todo
+
+# Raw/unoptimized demo recordings (too large for git)
+media/vscode-extension-ws-demo-1.gif
