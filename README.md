@@ -4,12 +4,24 @@ Bookmark VS Code Marketplace extensions to a wishlist and try them later — wit
 
 Found an interesting extension but don't want to install it right this moment? Save it to your wishlist and come back to it when you're ready.
 
+![Extension Wishlist sidebar listing saved VS Code extensions with install counts and star ratings](media/wishlist-list.png)
+
+## Why use a wishlist?
+
+Installing every extension you come across bloats your setup and slows down VS Code's startup. Extension Wishlist lets you bookmark VS Code extensions the moment you spot them — in the Marketplace, in a blog post, in a colleague's recommendation — and decide later whether they're worth installing. Think of it as a reading list for your Extensions view.
+
 ## Features
 
 - **Add from the native Extensions view** — right-click any extension and choose **Add to Wishlist**. No custom search UI; it stays out of the way of VS Code's built-in Marketplace.
+
+  ![Add to Wishlist option in the VS Code Extensions Marketplace right-click context menu](media/marketplace-context-menu.png)
+
 - **Wishlist instead of install** — saved extensions aren't downloaded until you decide to try them.
 - **Sidebar list** in the Activity Bar showing everything you've saved, with a count badge. Click an item to open its page **inside VS Code**, where you can install it with the native UI.
 - **Installed at a glance** — once a wishlisted extension is installed, its row shows a ✓ "Installed" marker and an inline **Uninstall** action.
+
+  ![Open in Marketplace, Uninstall, and Remove from Wishlist actions in the Extension Wishlist sidebar context menu](media/wishlist-context-menu.png)
+
 - **Add by ID** for extensions you already know (e.g. `esbenp.prettier-vscode`).
 - **Settings Sync** — your wishlist roams across your machines automatically.
 

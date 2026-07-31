@@ -17,3 +17,5 @@ node_modules
 # Extension build output
 dist/
 *.vsix
+
+todo
