@@ -115,14 +115,26 @@ export function activate(context: vscode.ExtensionContext): void {
     }
   });
 
-  // Keep the view title count in sync with the wishlist size.
+  // Keep the view title count in sync with the wishlist size, unless the
+  // user has turned the badge off in settings.
   const updateBadge = () => {
+    const showBadge = vscode.workspace
+      .getConfiguration("extensionWishlist")
+      .get<boolean>("showBadge", true);
     const count = store.getAll().length;
-    treeView.badge = count
-      ? { value: count, tooltip: `${count} wishlisted extensions` }
-      : undefined;
+    treeView.badge =
+      showBadge && count
+        ? { value: count, tooltip: `${count} wishlisted extensions` }
+        : undefined;
   };
   store.onDidChange(updateBadge);
+  context.subscriptions.push(
+    vscode.workspace.onDidChangeConfiguration((e) => {
+      if (e.affectsConfiguration("extensionWishlist.showBadge")) {
+        updateBadge();
+      }
+    })
+  );
   updateBadge();
 }
 

@@ -114,6 +114,16 @@
         "category": "Extension Wishlist"
       }
     ],
+    "configuration": {
+      "title": "Extension Wishlist",
+      "properties": {
+        "extensionWishlist.showBadge": {
+          "type": "boolean",
+          "default": true,
+          "description": "Show a badge on the Extension Wishlist activity bar icon with the number of wishlisted extensions."
+        }
+      }
+    },
     "menus": {
       "view/title": [
         {
