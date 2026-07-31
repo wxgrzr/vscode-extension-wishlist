@@ -1,7 +1,7 @@
 {
   "name": "extension-wishlist",
   "displayName": "Extension Wishlist",
-  "description": "Save VS Code Marketplace extensions to a wishlist to try later, without installing them.",
+  "description": "Bookmark VS Code Marketplace extensions to a wishlist so you can try them later — browse, save, and install only when you're ready.",
   "version": "0.1.0",
   "publisher": "wxgrzr",
   "license": "MIT",
@@ -26,10 +26,15 @@
   },
   "keywords": [
     "wishlist",
-    "marketplace",
-    "extensions",
     "bookmark",
-    "favorites"
+    "extension manager",
+    "extensions",
+    "marketplace",
+    "favorites",
+    "save for later",
+    "browse extensions",
+    "install later",
+    "extension list"
   ],
   "activationEvents": [],
   "main": "./dist/extension.js",
@@ -109,6 +114,16 @@
         "category": "Extension Wishlist"
       }
     ],
+    "configuration": {
+      "title": "Extension Wishlist",
+      "properties": {
+        "extensionWishlist.showBadge": {
+          "type": "boolean",
+          "default": true,
+          "description": "Show a badge on the Extension Wishlist activity bar icon with the number of wishlisted extensions."
+        }
+      }
+    },
     "menus": {
       "view/title": [
         {
