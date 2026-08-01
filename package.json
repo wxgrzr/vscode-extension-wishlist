@@ -2,7 +2,7 @@
   "name": "extension-wishlist",
   "displayName": "Extension Wishlist",
   "description": "Bookmark VS Code Marketplace extensions to a wishlist so you can try them later — browse, save, and install only when you're ready.",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "publisher": "wxgrzr",
   "license": "MIT",
   "author": "William Greer",
@@ -214,11 +214,13 @@
     "compile": "esbuild ./src/extension.ts --bundle --outfile=dist/extension.js --external:vscode --format=cjs --platform=node",
     "watch": "npm run compile -- --sourcemap --watch",
     "package": "npm run compile -- --minify",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "release": "vsce publish"
   },
   "devDependencies": {
     "@types/node": "^20.11.0",
     "@types/vscode": "^1.85.0",
+    "@vscode/vsce": "^3.9.2",
     "esbuild": "^0.21.5",
     "typescript": "^5.4.5"
   }
