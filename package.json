@@ -215,7 +215,7 @@
     "watch": "npm run compile -- --sourcemap --watch",
     "package": "npm run compile -- --minify",
     "typecheck": "tsc --noEmit",
-    "release": "vsce publish"
+    "release": "vsce publish --azure-credential"
   },
   "devDependencies": {
     "@types/node": "^20.11.0",
